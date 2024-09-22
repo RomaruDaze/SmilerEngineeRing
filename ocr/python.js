@@ -1,10 +1,11 @@
 const express = require('express');
 const path = require('path');
-const { execFile } = require('child_process');
+const bodyParser = require('body-parser');
 const app = express();
 const port = 5001;
 
 app.use(express.static(path.join(__dirname)));
+app.use(bodyParser.json({ limit: '10mb' }));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, './index.html'));
@@ -16,15 +17,23 @@ app.post('/take_photo', (req, res) => {
     const pythonPath = '/usr/local/bin/python3';
     const env = { ...process.env, PYTHONWARNINGS: 'ignore::UserWarning' };
 
-    execFile(pythonPath, [scriptPath], { env }, (error, stdout, stderr) => {
-        if (error) {
-            console.error('Subprocess error:', error);
-            console.error(stderr);
-            return res.status(500).json({ status: 'error', message: error.message });
-        }
+    const imageData = req.body.image;
+    if (!imageData) {
+        return res.status(400).json({ status: 'error', message: 'No image data provided.' });
+    }
 
+    const spawn = require('child_process').spawn;
+    const py = spawn(pythonPath, [scriptPath]);
+
+    let dataString = '';
+
+    py.stdout.on('data', function(data) {
+        dataString += data.toString();
+    });
+
+    py.stdout.on('end', function() {
         try {
-            const output = JSON.parse(stdout);
+            const output = JSON.parse(dataString);
             if (output.status === 'success') {
                 return res.json({
                     status: 'success',
@@ -33,16 +42,15 @@ app.post('/take_photo', (req, res) => {
                     location: output.location
                 });
             } else {
-                console.error('Error: Photo not taken.');
-                console.error(stdout);
-                console.error(stderr);
                 return res.status(500).json({ status: 'error', message: 'Photo not taken' });
             }
         } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
             return res.status(500).json({ status: 'error', message: 'Error parsing response' });
         }
     });
+
+    py.stdin.write(JSON.stringify({ image: imageData }));
+    py.stdin.end();
 });
 
 // Route to serve images
