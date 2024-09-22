@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smiler EngineeRing</title>
+</head>
+<body>
+    <h1>Smiler EngineeRing</h1>
+    <button id="take-photo-btn">Take Photo</button>
+    <p id="result"></p>
+    <h1>Result</h1>
+    <img id="photo" src="" alt="Photo will appear here" style="display: none;"/>
+    <p id="time"></p>
+    <p id="location"></p>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#take-photo-btn').click(function() {
+                $.ajax({
+                    url: '/take_photo',
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.status === "success") {
+                            $('#result').text('Photo taken successfully.');
+                            // Add a timestamp to the photo URL to ensure it refreshes
+                            $('#photo').attr('src', response.photo_path + '?t=' + new Date().getTime()).show();
+                            $('#time').text('Time: ' + response.time);
+                            $('#location').text('Location: ' + response.location);
+                        } else {
+                            $('#result').text('Error taking photo.');
+                        }
+                    },
+                    error: function() {
+                        $('#result').text('Error taking photo.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
