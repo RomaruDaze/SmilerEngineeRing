@@ -1,7 +1,6 @@
 import cv2
-import os
 import json
-import requests
+import base64
 from datetime import datetime
 import time
 
@@ -17,10 +16,8 @@ def take_photo():
     if not ret:
         return {"status": "error", "message": "Could not read frame."}
 
-    images_dir = os.path.join(os.path.dirname(__file__), 'images')
-    os.makedirs(images_dir, exist_ok=True)
-    photo_path = os.path.join(images_dir, 'photo.jpg')
-    cv2.imwrite(photo_path, frame)
+    _, buffer = cv2.imencode('.jpg', frame)
+    photo_blob = base64.b64encode(buffer).decode('utf-8')
     cap.release()
     cv2.destroyAllWindows()
 
@@ -31,7 +28,7 @@ def take_photo():
 
     return {
         "status": "success",
-        "photo_path": photo_path,
+        "photo_blob": photo_blob,
         "time": current_time,
         "location": location_address
     }

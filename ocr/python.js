@@ -1,13 +1,11 @@
 const express = require('express');
 const path = require('path');
 const { execFile } = require('child_process');
-const fs = require('fs');
-const cors = require('cors'); // Import the cors package
+const cors = require('cors'); 
 const app = express();
-const port = 5001; 
+const port = 5001;
 
-app.use(cors()); // Enable CORS for all routes
-
+app.use(cors()); 
 app.use(express.static(path.join(__dirname)));
 
 app.get('/', (req, res) => {
@@ -30,19 +28,11 @@ app.post('/take_photo', (req, res) => {
     try {
       const output = JSON.parse(stdout);
       if (output.status === 'success') {
-        const photoPath = output.photo_path;
-        fs.readFile(photoPath, (err, data) => {
-          if (err) {
-            console.error('Error reading photo file:', err);
-            return res.status(500).json({ status: 'error', message: 'Error reading photo file' });
-          }
-          const photoBlob = data.toString('base64');
-          return res.json({
-            status: 'success',
-            photo_blob: photoBlob,
-            time: output.time,
-            location: output.location
-          });
+        return res.json({
+          status: 'success',
+          photo_blob: output.photo_blob,
+          time: output.time,
+          location: output.location
         });
       } else {
         console.error('Error: Photo not taken.');
@@ -53,19 +43,6 @@ app.post('/take_photo', (req, res) => {
     } catch (parseError) {
       console.error('Error parsing JSON:', parseError);
       return res.status(500).json({ status: 'error', message: 'Error parsing response' });
-    }
-  });
-});
-
-// Route to serve images
-app.get('/images/:filename', (req, res) => {
-  const options = {
-    root: path.join(__dirname, 'images')
-  };
-  res.sendFile(req.params.filename, options, (err) => {
-    if (err) {
-      console.error(err);
-      res.status(err.status).end();
     }
   });
 });
