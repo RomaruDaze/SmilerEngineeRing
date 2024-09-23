@@ -4,65 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smiler EngineeRing</title>
+    <style>
+        #photo-blob {
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Ensures the text wraps properly */
+        }
+    </style>
 </head>
 <body>
     <h1>Smiler EngineeRing</h1>
     <button id="take-photo-btn">Take Photo</button>
     <p id="result"></p>
     <h1>Result</h1>
-    <video id="video" width="320" height="240" autoplay style="display: none;"></video>
-    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-    <img id="photo" src="" alt="Photo will appear here" style="display: none;"/>
+    <p id="photo-blob"></p>
     <p id="time"></p>
     <p id="location"></p>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const photo = document.getElementById('photo');
-            const takePhotoBtn = document.getElementById('take-photo-btn');
-            const result = document.getElementById('result');
-            const time = document.getElementById('time');
-            const location = document.getElementById('location');
-
-            // Get access to the camera
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                    video.srcObject = stream;
-                    video.play();
-                    console.log("Camera accessed on device:", navigator.userAgent);
-                }).catch(function(err) {
-                    console.error("Error accessing camera: ", err);
-                    result.textContent = 'Error accessing camera.';
-                });
-            } else {
-                result.textContent = 'Camera not supported by this browser.';
-            }
-
-            takePhotoBtn.addEventListener('click', function() {
-                // Draw the video frame to the canvas
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg');
-
+            $('#take-photo-btn').click(function() {
                 $.ajax({
                     url: '/take_photo',
                     type: 'POST',
-                    data: JSON.stringify({ image: dataUrl }),
-                    contentType: 'application/json',
                     success: function(response) {
                         if (response.status === "success") {
-                            result.textContent = 'Photo taken successfully.';
-                            photo.src = response.photo_path + '?t=' + new Date().getTime();
-                            photo.style.display = 'block';
-                            time.textContent = 'Time: ' + response.time;
-                            location.textContent = 'Location: ' + response.location;
+                            $('#result').text('Photo taken successfully.');
+                            console.log('Photo Blob:', response.photo_blob); // Log the base64 string
+                            $('#photo-blob').text(response.photo_blob);
+                            $('#time').text('Time: ' + response.time);
+                            $('#location').text('Location: ' + response.location);
                         } else {
-                            result.textContent = 'Error taking photo.';
+                            $('#result').text('Error taking photo.');
                         }
                     },
                     error: function() {
-                        result.textContent = 'Error taking photo.';
+                        $('#result').text('Error taking photo.');
                     }
                 });
             });

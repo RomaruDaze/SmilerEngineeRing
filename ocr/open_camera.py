@@ -1,23 +1,32 @@
 import cv2
 import os
 import json
-import base64
+import requests
 from datetime import datetime
-from flask import Flask, request, jsonify
+import time
 
-app = Flask(__name__)
+def take_photo():
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        return {"status": "error", "message": "Could not open camera."}
 
-def save_photo(image_data):
+    # Add a small delay to allow the camera to adjust to lighting conditions
+    time.sleep(0.1)
+
+    ret, frame = cap.read()
+    if not ret:
+        return {"status": "error", "message": "Could not read frame."}
+
     images_dir = os.path.join(os.path.dirname(__file__), 'images')
     os.makedirs(images_dir, exist_ok=True)
     photo_path = os.path.join(images_dir, 'photo.jpg')
-
-    # Decode the base64 image data
-    image_data = base64.b64decode(image_data.split(',')[1])
-    with open(photo_path, 'wb') as f:
-        f.write(image_data)
+    cv2.imwrite(photo_path, frame)
+    cap.release()
+    cv2.destroyAllWindows()
 
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Directly use the specified address
     location_address = "〒950-0917 Niigata, Chuo Ward, Tenjin, 1 Chome-1-3"
 
     return {
@@ -27,15 +36,6 @@ def save_photo(image_data):
         "location": location_address
     }
 
-@app.route('/take_photo', methods=['POST'])
-def take_photo():
-    data = request.json
-    image_data = data.get('image')
-    if not image_data:
-        return jsonify({"status": "error", "message": "No image data provided."})
-
-    result = save_photo(image_data)
-    return jsonify(result)
-
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001)
+    result = take_photo()
+    print(json.dumps(result))
